@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>First Steps in the Human Brain Cell Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: navy banner with a woven band, then three working columns
+   (superclusters, clusters, card) on a stone-grey page. Rules over boxes. */
+:root{
+  --page:#eceae6; --panel:#f7f6f3; --ink:#1b1a22; --muted:#5d5a66; --rule:#c9c5bd;
+  --banner:#151b3a; --banner-ink:#f3efe2; --gilt:#d7a425;
+  --accent:#5b2a86; --accent-soft:#e6dbf1; --teal:#1f7a78; --fuchsia:#b0277f;
+  --display:"Newsreader", Georgia, "Times New Roman", serif;
+  --body:"Archivo", "Helvetica Neue", Arial, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --page:#14131a; --panel:#1c1b24; --ink:#eceaf2; --muted:#a29fb0; --rule:#383544;
+    --banner:#0e1230; --banner-ink:#f3efe2; --gilt:#e0b23c;
+    --accent:#c59bea; --accent-soft:#2f2440; --teal:#56bdb8; --fuchsia:#e36bb6;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --page:#14131a; --panel:#1c1b24; --ink:#eceaf2; --muted:#a29fb0; --rule:#383544;
+  --banner:#0e1230; --banner-ink:#f3efe2; --gilt:#e0b23c;
+  --accent:#c59bea; --accent-soft:#2f2440; --teal:#56bdb8; --fuchsia:#e36bb6;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+a{color:var(--accent)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gilt);outline-offset:2px}
+
+.banner{background:var(--banner);color:var(--banner-ink);padding:22px 24px 18px}
+.banner .lab{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gilt);font-weight:600}
+.banner h1{font-family:var(--display);font-weight:600;font-size:clamp(26px,4vw,38px);line-height:1.1;margin:6px 0 8px;color:var(--gilt);text-wrap:balance}
+.banner p{margin:0;max-width:68ch;color:var(--banner-ink);opacity:.92}
+.weave{height:10px;background:
+  repeating-linear-gradient(90deg,var(--accent) 0 10px,var(--fuchsia) 10px 14px,var(--teal) 14px 24px,var(--gilt) 24px 28px),
+  var(--banner);
+  -webkit-mask-image:repeating-linear-gradient(0deg,#000 0 3px,transparent 3px 5px);
+          mask-image:repeating-linear-gradient(0deg,#000 0 3px,transparent 3px 5px)}
+
+.wrap{padding:16px 24px 40px;display:flex;flex-direction:column;gap:16px}
+.totals{display:flex;flex-wrap:wrap;gap:6px 28px;border-bottom:1px solid var(--rule);padding-bottom:12px}
+.totals div{display:flex;align-items:baseline;gap:8px}
+.totals b{font-family:var(--display);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
+.totals span{color:var(--muted)}
+.caution{margin:0;max-width:78ch;color:var(--muted)}
+
+.search{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.search label{font-weight:600}
+.search input{flex:1 1 260px;max-width:520px;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:8px 10px}
+.search button{background:none;border:1px solid var(--rule);border-radius:3px;padding:7px 12px;cursor:pointer}
+.search button:hover{border-color:var(--accent)}
+
+.cols{display:grid;grid-template-columns:minmax(220px,270px) minmax(230px,300px) minmax(0,1fr);gap:20px;align-items:start}
+.col h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 8px;border-bottom:2px solid var(--ink);padding-bottom:6px}
+.list{display:flex;flex-direction:column;max-height:74vh;overflow:auto;border-bottom:1px solid var(--rule)}
+.item{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--rule);padding:8px 8px 9px;cursor:pointer}
+.item:last-child{border-bottom:0}
+.item:hover{background:var(--panel)}
+.item[aria-current="true"]{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.item .nm{font-weight:600;display:block;overflow-wrap:anywhere}
+.item .meta{display:block;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.bar{display:block;height:4px;background:var(--rule);margin-top:6px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.empty{color:var(--muted);padding:10px 8px}
+
+.card{background:var(--panel);border-top:4px solid var(--gilt);padding:18px 20px 22px;min-width:0}
+.card .kicker{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.card h3{font-family:var(--display);font-size:32px;font-weight:600;line-height:1.1;margin:4px 0 4px;overflow-wrap:anywhere}
+.card .tools{display:flex;gap:10px;align-items:center;margin:10px 0 6px;flex-wrap:wrap}
+.card .tools button{background:var(--banner);color:var(--gilt);border:0;border-radius:3px;padding:7px 12px;cursor:pointer;font-weight:600}
+.card .tools span{color:var(--muted);font-size:13px}
+dl{margin:8px 0 0;display:grid;grid-template-columns:minmax(120px,180px) minmax(0,1fr);gap:0}
+dt,dd{margin:0;padding:9px 0;border-top:1px solid var(--rule)}
+dt{font-weight:600;padding-right:14px}
+dd{min-width:0;overflow-wrap:anywhere}
+.none{color:var(--muted)}
+.code{font-family:var(--mono);font-size:13px;font-weight:500}
+.gl{display:block}
+.gl small{color:var(--muted);font-size:13px}
+.genes{display:flex;flex-wrap:wrap;gap:5px}
+.genes span{font-family:var(--mono);font-size:12.5px;border:1px solid var(--rule);border-radius:2px;padding:1px 6px;background:var(--page)}
+.share{display:grid;grid-template-columns:minmax(90px,auto) minmax(60px,1fr) 64px;gap:4px 10px;align-items:center;max-width:520px}
+.share .track{height:8px;background:var(--rule)}
+.share .track i{display:block;height:100%;background:var(--teal)}
+.share .pct{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--muted)}
+.share .desc{grid-column:1 / -1;color:var(--muted);font-size:13px;margin:-2px 0 4px}
+.qc{display:flex;flex-wrap:wrap;gap:4px 22px;font-variant-numeric:tabular-nums}
+.qc span b{font-weight:600}
+h4{font-family:var(--display);font-size:21px;font-weight:600;margin:24px 0 2px}
+.subnote{margin:0 0 8px;color:var(--muted);max-width:70ch}
+.tablewrap{overflow-x:auto;border-top:2px solid var(--ink)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:13.5px}
+th,td{text-align:left;vertical-align:top;padding:7px 10px 7px 0;border-bottom:1px solid var(--rule)}
+th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;padding-right:16px}
+td .g{font-family:var(--mono);font-size:12px}
+
+footer{border-top:1px solid var(--rule);padding-top:12px;color:var(--muted);max-width:86ch}
+footer p{margin:0 0 6px}
+
+@media (max-width:980px){
+  .cols{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .cols .col.cardcol{grid-column:1 / -1}
+  .list{max-height:42vh}
+}
+@media (max-width:620px){
+  .wrap{padding:14px 16px 32px}
+  .banner{padding:18px 16px 14px}
+  .cols{grid-template-columns:minmax(0,1fr)}
+  dl{grid-template-columns:minmax(0,1fr)}
+  dt{padding-bottom:0}
+  dd{border-top:0;padding-top:2px}
+}
+@media (prefers-reduced-motion:no-preference){ .item{transition:background .12s} }
+
+.read{max-width:74ch;display:flex;flex-direction:column;gap:6px}
+.read h2{font-family:var(--display);font-size:27px;font-weight:600;line-height:1.15;margin:26px 0 2px;border-top:2px solid var(--ink);padding-top:12px;text-wrap:balance}
+.read p{margin:6px 0}
+.read ol,.read ul{margin:6px 0;padding-left:22px}
+.read li{margin:6px 0}
+.read .tablewrap{margin:8px 0;border-top:2px solid var(--ink)}
+.read table{min-width:520px;font-size:14.5px}
+.read td:first-child{font-weight:600;white-space:nowrap;padding-right:18px}
+.read .kick{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.nav{display:flex;gap:18px;flex-wrap:wrap;font-weight:600}
+.read ul.todo{list-style:none;padding-left:0}
+.read ul.todo li{border-top:1px solid var(--rule);padding:8px 0 2px;margin:0}
+</style>
+</head>
+<body>
+<header class="banner">
+  <div class="lab">Epistemic Systems Lab</div>
+  <h1>First Steps in the Human Brain Cell Atlas</h1>
+  <p>An introductory tutorial for newcomers. It explains, word by word, how to read one card in the human reader.</p>
+</header>
+<div class="weave" aria-hidden="true"></div>
+<div class="wrap">
+<nav class="nav"><a href="index.html">All readers</a><a href="human.html">Open the human reader</a><a href="mouse.html">Open the mouse explorer</a></nav>
+<article class="read">
+
+<h2>Starting point</h2>
+<p>This tutorial teaches you to read one card in the <a href="human.html">Human Brain Cell Cluster Reader</a> and to say what each word on it means. It assumes no biology.</p>
+<p>The reader shows tables from a study published in Science in 2023 by Kimberly Siletti and colleagues at Karolinska Institute and the Allen Institute. The team read the RNA in more than three million cell nuclei, taken from about 100 places in adult human brains. A computer then sorted the nuclei into 461 clusters and 3,313 subclusters.</p>
+<p>News reports summarised the result as "more than 3,000 kinds of brain cell". By the end of this tutorial you will know where that number comes from and how far it can be trusted.</p>
+
+<h2>Title of the paper, word by word</h2>
+<p>The paper is called "Transcriptomic diversity of cell types across the adult human brain". Each word tells you something about what was done.</p>
+<div class="tablewrap"><table><thead><tr><th>Word</th><th>Plain meaning</th></tr></thead><tbody><tr><td>Transcriptomic</td><td>About the transcriptome. The transcriptome is the set of RNA molecules inside a cell.</td></tr><tr><td>Diversity</td><td>How many different kinds there are. Here it means how many groups of nuclei carry distinct sets of RNA.</td></tr><tr><td>Cell types</td><td>Kinds of cell. In this study a kind is a group of nuclei with similar RNA, found by a computer.</td></tr><tr><td>Across</td><td>The samples come from many places: forebrain, midbrain and hindbrain.</td></tr><tr><td>Adult human brain</td><td>The tissue came from adult donors after death.</td></tr></tbody></table></div>
+<p>RNA is a good way to tell cells apart. Two cells in one body carry a similar or identical set of DNA, and very different sets of RNA. A skin cell and a brain cell are the standard example.</p>
+<p>RNA is made by copying. Transcription is the process of making an RNA copy of a gene's DNA sequence. A gene that is being copied a lot is said to be highly expressed.</p>
+
+<h2>Cells of the brain</h2>
+<p>The brain and spinal cord are made of two basic kinds of cell: neurons and glia.</p>
+<p><b>Neuron.</b> A nerve cell. Neurons send messages all over the body. The parts named in the US national institute's primer are the cell body, the nucleus, dendrites, the axon and axon terminals.</p>
+<p><b>Neurotransmitter.</b> A chemical that relays information between brain cells. Different neurons use different neurotransmitters, and the cards record which one each cluster appears to use.</p>
+<p><b>Glia.</b> The other basic kind of brain cell. The study's own label files name several: astrocytes, oligodendrocytes, oligodendrocyte precursor cells and microglia.</p>
+<p><b>Other cells.</b> Brain tissue also holds cells that are neither neurons nor glia. The label files name ependymal cells, choroid plexus cells, endothelial cells, pericytes, fibroblasts, vascular smooth muscle cells and several immune cells. This tutorial gives their names only.</p>
+<p>The study sorted its nuclei into 21 groups of neurons and 10 groups of other cells. So the famous figure of 3,000 counts all brain cells. It is larger than the count of neuron groups alone.</p>
+
+<h2>From tissue to data</h2>
+<p>The tables behind the reader were made in this order.</p>
+<ol>
+<li><b>Donor.</b> A person whose brain was given to research after death. The paper describes three donors.</li>
+<li><b>Dissection.</b> A small piece of brain cut from a named anatomical place. The team aimed for 100 dissections in each donor. The reader's tables list 104 dissection names, each with a short description.</li>
+<li><b>Nucleus.</b> The compartment inside a cell where the DNA is kept. The team worked with single nuclei. A trade review explains the usual reason: nuclei can be obtained from human brain cells whatever condition the cells are in.</li>
+<li><b>Sorting.</b> A machine sorted the nuclei so that samples held about nine neurons for every other cell. Many regions outside the cortex fell short of that ratio.</li>
+<li><b>RNA sequencing.</b> The RNA is isolated, copied into DNA, and read by a sequencing machine. The result says which RNA molecules are present and how many of each.</li>
+<li><b>Clustering.</b> A computer pooled all nuclei, adjusted for differences between donors, and grouped nuclei with similar RNA.</li>
+<li><b>Annotation.</b> People and rules then attached labels to the groups. The next two sections explain those labels.</li>
+</ol>
+<p>The finished dataset holds 3,369,219 nuclei.</p>
+
+<h2>Levels of grouping</h2>
+<p>The computer grouped the nuclei at three levels, from coarse to fine.</p>
+<div class="tablewrap"><table><thead><tr><th>Level</th><th>How many</th><th>How it was made</th></tr></thead><tbody><tr><td>Supercluster</td><td>31</td><td>Clusters joined into large families, 21 of neurons and 10 of other cells. People named them, using the literature and the regions the cells came from.</td></tr><tr><td>Cluster</td><td>461</td><td>Groups of nuclei with similar RNA. The reader writes one card for each.</td></tr><tr><td>Subcluster</td><td>3,313</td><td>Each cluster split further. The authors call this level more detailed and less robust.</td></tr></tbody></table></div>
+<p>The figure of 3,000 kinds of brain cell is the subcluster count. A different clustering method could draw those finest lines differently, so read a subcluster as a provisional grouping.</p>
+<p>Most supercluster names describe a family, such as Astrocyte or Thalamic excitatory. Two names need explaining.</p>
+<p><b>Splatter.</b> A supercluster of mixed neurons from most brain regions. It is named for how it looks when the data are drawn as a map. Its neurons share no single set of genes. It holds 92 clusters and 1,145 subclusters, more than any other supercluster.</p>
+<p><b>Miscellaneous.</b> Rare cells that did not connect well to anything else, such as lymphocytes, a kind of immune cell.</p>
+
+<h2>Reading a cluster card</h2>
+<p>Open the <a href="human.html#cluster-133">reader at cluster ULIT_133</a>, in the supercluster Upper-layer intratelencephalic. The table explains each field on its card, top to bottom.</p>
+<div class="tablewrap"><table><thead><tr><th>Field</th><th>What it means</th><th>On the ULIT_133 card</th></tr></thead><tbody><tr><td>Name and number</td><td>The number identifies the cluster and comes from the clustering procedure. The letters match the supercluster.</td><td>Cluster 133</td></tr><tr><td>Class</td><td>The broad kind of cell. A rule assigns it: named genes must be present, marked +, or absent, marked &minus;.</td><td>NEUR, Neuron, defined by +RBFOX3</td></tr><tr><td>Subtype</td><td>A finer label assigned by the same kind of rule. Most clusters have none.</td><td>Not annotated</td></tr><tr><td>Neurotransmitter</td><td>The chemical the cluster's neurons appear to use, inferred from marker genes.</td><td>VGLUT1 and VGLUT2, both glutamatergic</td></tr><tr><td>Neuropeptides</td><td>Codes for neuropeptide genes detected in the cluster.</td><td>Eleven codes, including CCK and VGF</td></tr><tr><td>Transferred MTG label</td><td>A label carried over from another dataset. The tables do not define the column.</td><td>None</td></tr><tr><td>Top three regions</td><td>The share of the cluster's nuclei that came from each brain region.</td><td>Cerebral cortex 100.0%</td></tr><tr><td>Top three dissections</td><td>The same share, for the three most common dissections.</td><td>V1C 62.9%, V2 17.6%, Pro 14.7%</td></tr><tr><td>Top enriched genes</td><td>The genes the authors list as most enriched in this cluster.</td><td>Ten genes, including VIPR2 and TRPC3</td></tr><tr><td>Nuclei</td><td>How many nuclei fell in the cluster, and from how many donors.</td><td>20,086</td></tr><tr><td>Quality measures</td><td>Technical checks on the measurement. This first tutorial does not explain them.</td><td>Four numbers</td></tr><tr><td>Function</td><td>What the cells do. The dataset does not say.</td><td>Not provided</td></tr></tbody></table></div>
+<p>Glutamate and GABA codes cover most neuron clusters. The label files describe glutamatergic cells (VGLUT1, VGLUT2, VGLUT3) as excitatory. They describe GABAergic cells (GABA) as typically inhibitory.</p>
+<p>Read together, the card says this much about ULIT_133. It is a cluster of about twenty thousand neuron nuclei. Almost all came from the cerebral cortex, mostly from the dissection V1C in the cuneus and lingual gyrus. Its neurons carry the markers of glutamatergic, excitatory cells.</p>
+
+<h2>Limits</h2>
+<p>The tables describe groups of nuclei by their RNA and nothing else. Keep these limits in mind when you read a card.</p>
+<ul>
+<li><b>No function.</b> The authors link brain regions to roles such as innate behaviour. They stop short of assigning a function to any single cluster.</li>
+<li><b>Few donors.</b> The paper describes three donors and leaves variation between people unexplored. The tables carry counts under four donor identifiers, a difference this tutorial has not resolved.</li>
+<li><b>Uneven sampling.</b> The authors say the midbrain and hindbrain were under-sampled, so more diversity may exist there than they could detect.</li>
+<li><b>Imperfect dissections.</b> The borders of a dissection were hard to reproduce from one donor to the next.</li>
+<li><b>Doubtful clusters.</b> Some clusters may reflect debris, a single donor, or the tissue's response to loss of blood supply.</li>
+<li><b>Provisional subclusters.</b> The finest level is the least robust.</li>
+</ul>
+<p>One of the senior authors called the wider atlas a first draft, and researchers expect to find more kinds of brain cell.</p>
+
+<h2>Practice</h2>
+<p>Each exercise takes a few minutes in the <a href="human.html">Human Brain Cell Cluster Reader</a>.</p>
+<ul class="todo">
+<li>Open the supercluster Astrocyte and read the Class line of any card. Find the genes that must be present and the gene that must be absent.</li>
+<li>Type INT-VIP in the search box and open one result. Read its Subtype line and name the last gene in the rule.</li>
+<li>Type thalamus, open Thex_459, and read the descriptions under its top three dissections.</li>
+<li>Open Splatter and compare the top regions of three clusters. Note how many different regions appear.</li>
+<li>Choose any card, press Copy card as text, and rewrite it in three plain sentences, as done above for ULIT_133.</li>
+</ul>
+
+<h2>Sources</h2>
+<p>Every statement above comes from one of these sources. The Science page itself could not be opened, so the paper's content is taken from its preprint and from index records of the published abstract.</p>
+<ul>
+<li>Siletti K. et al., Transcriptomic diversity of cell types across the adult human brain. Science 382, eadd7046 (2023). <a href="https://www.science.org/doi/10.1126/science.add7046">doi:10.1126/science.add7046</a>. Read as the <a href="https://www.biorxiv.org/content/10.1101/2022.10.12.511898.full.pdf">bioRxiv preprint</a>.</li>
+<li>Annotation tables and dissection descriptions: <a href="https://github.com/linnarsson-lab/adult-human-brain/tree/main/tables">linnarsson-lab/adult-human-brain</a>.</li>
+<li>Label rules and names: <a href="https://github.com/linnarsson-lab/auto-annotation-ah">linnarsson-lab/auto-annotation-ah</a>.</li>
+<li>Taxonomy counts: <a href="https://alleninstitute.github.io/abc_atlas_access/descriptions/WHB-taxonomy.html">Human brain taxonomy of cell types, Allen Brain Cell Atlas</a>.</li>
+<li>Plain-language account of the atlas: <a href="https://alleninstitute.org/news/what-makes-us-human-detailed-cellular-maps-of-the-entire-human-brain-reveal-clues">Allen Institute news, October 2023</a> and <a href="https://wnyc.org/story/scientists-built-the-largest-ever-map-of-the-human-brain-heres-what-they-found">NPR report carried by WNYC</a>.</li>
+<li>Neurons, glia and neurotransmitters: <a href="https://ninds.nih.gov/health-information/public-education/brain-basics/brain-basics-life-and-death-neuron">Brain Basics: The Life and Death of a Neuron, NINDS</a>.</li>
+<li>RNA, transcriptome and sequencing: <a href="https://www.genome.gov/genetics-glossary/RNA-seq">RNA-seq</a> and <a href="https://www.genome.gov/genetics-glossary/transcription">Transcription</a>, NHGRI genetics glossary.</li>
+<li>The nucleus and DNA: <a href="https://www.genomicseducation.hee.nhs.uk/glossary/transcriptomics/">Transcriptomics, NHS Genomics Education glossary</a>.</li>
+<li>Why nuclei are used: <a href="https://www.insideprecisionmedicine.com/topics/precision-medicine/how-single-cell-omics-is-revolutionizing-our-view-of-neurobiology/">How single-cell omics is revolutionizing our view of neurobiology, Inside Precision Medicine</a>.</li>
+</ul>
+</article>
+<footer><p>Draft for checking by the data authors. Epistemic Systems Lab.</p></footer>
+</div>
+</body>
+</html>

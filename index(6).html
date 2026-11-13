@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brain Cell Atlas Readers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: navy banner with a woven band, then three working columns
+   (superclusters, clusters, card) on a stone-grey page. Rules over boxes. */
+:root{
+  --page:#eceae6; --panel:#f7f6f3; --ink:#1b1a22; --muted:#5d5a66; --rule:#c9c5bd;
+  --banner:#151b3a; --banner-ink:#f3efe2; --gilt:#d7a425;
+  --accent:#5b2a86; --accent-soft:#e6dbf1; --teal:#1f7a78; --fuchsia:#b0277f;
+  --display:"Newsreader", Georgia, "Times New Roman", serif;
+  --body:"Archivo", "Helvetica Neue", Arial, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --page:#14131a; --panel:#1c1b24; --ink:#eceaf2; --muted:#a29fb0; --rule:#383544;
+    --banner:#0e1230; --banner-ink:#f3efe2; --gilt:#e0b23c;
+    --accent:#c59bea; --accent-soft:#2f2440; --teal:#56bdb8; --fuchsia:#e36bb6;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --page:#14131a; --panel:#1c1b24; --ink:#eceaf2; --muted:#a29fb0; --rule:#383544;
+  --banner:#0e1230; --banner-ink:#f3efe2; --gilt:#e0b23c;
+  --accent:#c59bea; --accent-soft:#2f2440; --teal:#56bdb8; --fuchsia:#e36bb6;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+a{color:var(--accent)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gilt);outline-offset:2px}
+
+.banner{background:var(--banner);color:var(--banner-ink);padding:22px 24px 18px}
+.banner .lab{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gilt);font-weight:600}
+.banner h1{font-family:var(--display);font-weight:600;font-size:clamp(26px,4vw,38px);line-height:1.1;margin:6px 0 8px;color:var(--gilt);text-wrap:balance}
+.banner p{margin:0;max-width:68ch;color:var(--banner-ink);opacity:.92}
+.weave{height:10px;background:
+  repeating-linear-gradient(90deg,var(--accent) 0 10px,var(--fuchsia) 10px 14px,var(--teal) 14px 24px,var(--gilt) 24px 28px),
+  var(--banner);
+  -webkit-mask-image:repeating-linear-gradient(0deg,#000 0 3px,transparent 3px 5px);
+          mask-image:repeating-linear-gradient(0deg,#000 0 3px,transparent 3px 5px)}
+
+.wrap{padding:16px 24px 40px;display:flex;flex-direction:column;gap:16px}
+.totals{display:flex;flex-wrap:wrap;gap:6px 28px;border-bottom:1px solid var(--rule);padding-bottom:12px}
+.totals div{display:flex;align-items:baseline;gap:8px}
+.totals b{font-family:var(--display);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
+.totals span{color:var(--muted)}
+.caution{margin:0;max-width:78ch;color:var(--muted)}
+
+.search{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.search label{font-weight:600}
+.search input{flex:1 1 260px;max-width:520px;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:8px 10px}
+.search button{background:none;border:1px solid var(--rule);border-radius:3px;padding:7px 12px;cursor:pointer}
+.search button:hover{border-color:var(--accent)}
+
+.cols{display:grid;grid-template-columns:minmax(220px,270px) minmax(230px,300px) minmax(0,1fr);gap:20px;align-items:start}
+.col h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 8px;border-bottom:2px solid var(--ink);padding-bottom:6px}
+.list{display:flex;flex-direction:column;max-height:74vh;overflow:auto;border-bottom:1px solid var(--rule)}
+.item{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--rule);padding:8px 8px 9px;cursor:pointer}
+.item:last-child{border-bottom:0}
+.item:hover{background:var(--panel)}
+.item[aria-current="true"]{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.item .nm{font-weight:600;display:block;overflow-wrap:anywhere}
+.item .meta{display:block;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.bar{display:block;height:4px;background:var(--rule);margin-top:6px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.empty{color:var(--muted);padding:10px 8px}
+
+.card{background:var(--panel);border-top:4px solid var(--gilt);padding:18px 20px 22px;min-width:0}
+.card .kicker{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.card h3{font-family:var(--display);font-size:32px;font-weight:600;line-height:1.1;margin:4px 0 4px;overflow-wrap:anywhere}
+.card .tools{display:flex;gap:10px;align-items:center;margin:10px 0 6px;flex-wrap:wrap}
+.card .tools button{background:var(--banner);color:var(--gilt);border:0;border-radius:3px;padding:7px 12px;cursor:pointer;font-weight:600}
+.card .tools span{color:var(--muted);font-size:13px}
+dl{margin:8px 0 0;display:grid;grid-template-columns:minmax(120px,180px) minmax(0,1fr);gap:0}
+dt,dd{margin:0;padding:9px 0;border-top:1px solid var(--rule)}
+dt{font-weight:600;padding-right:14px}
+dd{min-width:0;overflow-wrap:anywhere}
+.none{color:var(--muted)}
+.code{font-family:var(--mono);font-size:13px;font-weight:500}
+.gl{display:block}
+.gl small{color:var(--muted);font-size:13px}
+.genes{display:flex;flex-wrap:wrap;gap:5px}
+.genes span{font-family:var(--mono);font-size:12.5px;border:1px solid var(--rule);border-radius:2px;padding:1px 6px;background:var(--page)}
+.share{display:grid;grid-template-columns:minmax(90px,auto) minmax(60px,1fr) 64px;gap:4px 10px;align-items:center;max-width:520px}
+.share .track{height:8px;background:var(--rule)}
+.share .track i{display:block;height:100%;background:var(--teal)}
+.share .pct{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--muted)}
+.share .desc{grid-column:1 / -1;color:var(--muted);font-size:13px;margin:-2px 0 4px}
+.qc{display:flex;flex-wrap:wrap;gap:4px 22px;font-variant-numeric:tabular-nums}
+.qc span b{font-weight:600}
+h4{font-family:var(--display);font-size:21px;font-weight:600;margin:24px 0 2px}
+.subnote{margin:0 0 8px;color:var(--muted);max-width:70ch}
+.tablewrap{overflow-x:auto;border-top:2px solid var(--ink)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:13.5px}
+th,td{text-align:left;vertical-align:top;padding:7px 10px 7px 0;border-bottom:1px solid var(--rule)}
+th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;padding-right:16px}
+td .g{font-family:var(--mono);font-size:12px}
+
+footer{border-top:1px solid var(--rule);padding-top:12px;color:var(--muted);max-width:86ch}
+footer p{margin:0 0 6px}
+
+@media (max-width:980px){
+  .cols{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .cols .col.cardcol{grid-column:1 / -1}
+  .list{max-height:42vh}
+}
+@media (max-width:620px){
+  .wrap{padding:14px 16px 32px}
+  .banner{padding:18px 16px 14px}
+  .cols{grid-template-columns:minmax(0,1fr)}
+  dl{grid-template-columns:minmax(0,1fr)}
+  dt{padding-bottom:0}
+  dd{border-top:0;padding-top:2px}
+}
+@media (prefers-reduced-motion:no-preference){ .item{transition:background .12s} }
+
+.doors{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;max-width:900px}
+.door{display:block;background:var(--panel);border-top:4px solid var(--gilt);padding:18px 20px 20px;text-decoration:none;color:var(--ink)}
+.door:hover{box-shadow:inset 0 0 0 1px var(--accent)}
+.door h2{font-family:var(--display);font-size:26px;font-weight:600;margin:0 0 6px;line-height:1.15}
+.door p{margin:0 0 10px;color:var(--muted)}
+.door span{color:var(--accent);font-weight:600}
+</style>
+</head>
+<body>
+<header class="banner">
+  <div class="lab">Epistemic Systems Lab</div>
+  <h1>Brain Cell Atlas Readers</h1>
+  <p>Two readable views of published brain cell atlases, with a first tutorial for newcomers. Each page copies its values from the authors' own annotation tables and assigns no function to any cell group.</p>
+</header>
+<div class="weave" aria-hidden="true"></div>
+<div class="wrap">
+  <div class="doors">
+    <a class="door" href="human.html">
+      <h2>Human Brain Cell Cluster Reader</h2>
+      <p>31 superclusters, 461 clusters and 3,313 subclusters from 3,369,219 nuclei. Siletti et al., Science, 2023.</p>
+      <span>Open the human reader</span>
+    </a>
+    <a class="door" href="mouse.html">
+      <h2>Mouse Brain Cell Type Explorer</h2>
+      <p>34 classes, 338 subclasses, 1,201 supertypes and 5,322 clusters from 4,042,976 cells. Yao et al., Nature, 2023.</p>
+      <span>Open the mouse explorer</span>
+    </a>
+    <a class="door" href="tutorial.html">
+      <h2>First Steps in the Human Brain Cell Atlas</h2>
+      <p>An introductory tutorial for newcomers. It explains, word by word, how to read one card in the human reader.</p>
+      <span>Start the tutorial</span>
+    </a>
+  </div>
+  <footer>
+    <p>Human data: Siletti K. et al., Science 382, eadd7046 (2023), <a href="https://www.science.org/doi/10.1126/science.add7046">doi:10.1126/science.add7046</a>. Tables from <a href="https://github.com/linnarsson-lab/adult-human-brain">linnarsson-lab/adult-human-brain</a>.</p>
+    <p>Mouse data: Yao Z. et al., Nature 624, 317-332 (2023), <a href="https://doi.org/10.1038/s41586-023-06812-z">doi:10.1038/s41586-023-06812-z</a>. Tables from the <a href="https://alleninstitute.github.io/abc_atlas_access/intro.html">Allen Brain Cell Atlas</a>, shared under CC BY NC 4.0.</p>
+  </footer>
+</div>
+</body>
+</html>
